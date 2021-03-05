@@ -1,3 +1,5 @@
+
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:synchronized/synchronized.dart';
 
 import 'InvertedClipper.dart';
+import 'OverlayData.dart';
 import 'OverlayPainter.dart';
 import 'WidgetData.dart';
 
@@ -12,48 +15,17 @@ import 'package:uuid/uuid.dart';
 
 typedef TutorialOverlayHook = void Function(String);
 
-TutorialOverlayHook showOverlayHook;
-TutorialOverlayHook hideOverlayHook;
+TutorialOverlayHook? showOverlayHook;
+TutorialOverlayHook? hideOverlayHook;
 
-OverlayData visibleOverlayPage;
+OverlayData? _visibleOverlayPage;
 
 Map<String, OverlayData> _overlays = {};
 Map<GlobalKey, Rect> _rectMap = {};
 Lock _showOverlayLock = Lock();
 
-final uuid = new Uuid();
-
 bool _debugInfo = false;
 bool _doneIt = false;
-
-class OverlayData {
-  OverlayEntry entry;
-  int enabledVisibleWidgetsCount;
-  int disabledVisibleWidgetsCount;
-  bool detectWidgetPositionNSizeChanges;
-  String tagName;
-  BuildContext context;
-  AnimationController animationController;
-  List<GlobalKey> widgetsGlobalKeys;
-  Function hideOverlay;
-  Function showOverlay;
-  String uuid;
-  bool isOverlayBgTransparent;
-
-  OverlayData(
-      {@required this.entry,
-      @required this.tagName,
-      @required this.context,
-      @required this.hideOverlay,
-      @required this.showOverlay,
-      @required this.uuid,
-      this.widgetsGlobalKeys,
-      this.animationController,
-      this.enabledVisibleWidgetsCount = 0,
-      this.disabledVisibleWidgetsCount = 0,
-      this.detectWidgetPositionNSizeChanges = true,
-      this.isOverlayBgTransparent = false});
-}
 
 void setTutorialShowOverlayHook(TutorialOverlayHook func) {
   showOverlayHook = func;
@@ -66,11 +38,11 @@ void setTutorialHideOverlayHook(TutorialOverlayHook func) {
 void _detectWidgetPositionNSizeChange() {
   var bindings = WidgetsFlutterBinding.ensureInitialized();
   bindings.addPersistentFrameCallback((d) {
-    if (visibleOverlayPage != null &&
-        (visibleOverlayPage.disabledVisibleWidgetsCount +
-                visibleOverlayPage.enabledVisibleWidgetsCount >
+    if (_visibleOverlayPage != null &&
+        (_visibleOverlayPage!.disabledVisibleWidgetsCount +
+                _visibleOverlayPage!.enabledVisibleWidgetsCount >
             0)) {
-      for (final widgetGlobalKey in visibleOverlayPage.widgetsGlobalKeys) {
+      for (final widgetGlobalKey in _visibleOverlayPage!.widgetsGlobalKeys) {
         if (_sizeVisitor(widgetGlobalKey)) {
           redrawCurrentOverlay();
           break;
@@ -82,7 +54,7 @@ void _detectWidgetPositionNSizeChange() {
 
 bool _sizeVisitor(GlobalKey elementKey) {
   if (elementKey.currentContext != null) {
-    final RenderBox renderBox = elementKey.currentContext.findRenderObject();
+    final RenderBox renderBox = elementKey.currentContext!.findRenderObject() as RenderBox;
     bool isChanged = false;
     Rect newRect = renderBox.localToGlobal(Offset.zero) & renderBox.size;
     _rectMap.update(elementKey, (oldRect) {
@@ -104,11 +76,11 @@ _printIfDebug(String funcName, String str) {
 }
 
 void redrawCurrentOverlay() {
-  if (visibleOverlayPage != null) {
-    _printIfDebug('redrawCurrentOverlay', "tag ${visibleOverlayPage.tagName}");
-    SchedulerBinding.instance.addPostFrameCallback((_) {
+  if (_visibleOverlayPage != null) {
+    _printIfDebug('redrawCurrentOverlay', "tag ${_visibleOverlayPage!.tagName}");
+    SchedulerBinding.instance!.addPostFrameCallback((_) {
       _showOverlayEntry(
-          tagName: visibleOverlayPage.tagName,
+          tagName: _visibleOverlayPage!.tagName,
           redisplayOverlayIfSameTAgName: true);
     });
   } else {
@@ -116,10 +88,12 @@ void redrawCurrentOverlay() {
   }
 }
 
-void _showOverlayEntry(
-    {String tagName, bool redisplayOverlayIfSameTAgName = false}) {
+void _showOverlayEntry({
+  required String tagName,
+  bool redisplayOverlayIfSameTAgName = false,
+}) {
   _printIfDebug('_showOverlayEntry', "for tag $tagName");
-  SchedulerBinding.instance.addPostFrameCallback((_) {
+  SchedulerBinding.instance!.addPostFrameCallback((_) {
     if (!_doneIt) {
       _doneIt = true;
       _detectWidgetPositionNSizeChange();
@@ -127,7 +101,7 @@ void _showOverlayEntry(
   });
 
   final bool isNotSamePage =
-      visibleOverlayPage == null || visibleOverlayPage.tagName != tagName;
+      _visibleOverlayPage == null || _visibleOverlayPage!.tagName != tagName;
 
   if (redisplayOverlayIfSameTAgName || isNotSamePage) {
     _printIfDebug('_showOverlayEntry', "tagname null or differs from current");
@@ -137,92 +111,101 @@ void _showOverlayEntry(
     }
     hideOverlayEntryIfExists(toRunHook: isNotSamePage);
     if (isNotSamePage && showOverlayHook != null) {
-      showOverlayHook(tagName);
+      showOverlayHook!(tagName);
     }
-    final OverlayData data = _overlays[tagName];
-    Overlay.of(data.context).insert(data.entry);
-    visibleOverlayPage = data;
-    visibleOverlayPage.showOverlay();
+    final OverlayData data = _overlays[tagName]!;
+    Overlay.of(data.context)!.insert(data.entry);
+    _visibleOverlayPage = data;
+    _visibleOverlayPage!.showOverlay();
   }
   _printIfDebug('_showOverlayEntry', 'function completed');
 }
 
-void showOverlayEntry(
-    {String tagName, bool redisplayOverlayIfSameTAgName = true}) async {
-  SchedulerBinding.instance.addPostFrameCallback((d) =>
-      _showOverlayLock.synchronized(() => _showOverlayEntry(
-          tagName: tagName,
-          redisplayOverlayIfSameTAgName: redisplayOverlayIfSameTAgName)));
+void showOverlayEntry({
+  required String tagName,
+  bool redisplayOverlayIfSameTAgName = true,
+}) async {
+  SchedulerBinding.instance!.addPostFrameCallback(
+    (d) => _showOverlayLock.synchronized(
+      () => _showOverlayEntry(
+        tagName: tagName,
+        redisplayOverlayIfSameTAgName: redisplayOverlayIfSameTAgName,
+      ),
+    ),
+  );
 }
 
 void hideOverlayEntryIfExists({bool toRunHook = true}) {
-  if (visibleOverlayPage != null) {
+  if (_visibleOverlayPage != null) {
     _printIfDebug(
-        'hideOverlayEntryIfExists', "found tag ${visibleOverlayPage.tagName}");
+        'hideOverlayEntryIfExists', "found tag ${_visibleOverlayPage!.tagName}");
     if (toRunHook && hideOverlayHook != null) {
-      hideOverlayHook(visibleOverlayPage.tagName);
+      hideOverlayHook!(_visibleOverlayPage!.tagName);
     }
-    visibleOverlayPage.hideOverlay();
-    visibleOverlayPage.entry.remove();
-    visibleOverlayPage = null;
+    _visibleOverlayPage!.hideOverlay();
+    _visibleOverlayPage!.entry.remove();
+    _visibleOverlayPage = null;
   }
 }
 
 Future waitForFrameToEnd() async {
   Completer completer = new Completer();
-  SchedulerBinding.instance.addPostFrameCallback((_) => completer.complete());
+  SchedulerBinding.instance!.addPostFrameCallback((_) => completer.complete());
   return completer.future;
 }
 
-void createTutorialOverlayIfNotExists(
-    {@required String tagName,
-    @required BuildContext context,
-    bool enableHolesAnimation = true,
-    bool enableAnimationRepeat = true,
-    double defaultPadding = 4,
-    List<WidgetData> widgetsData = const [],
-    Function onTap,
-    Color bgColor,
-    Widget description,
-    int highlightCount = 3,
-    int animationMilliseconds = 150,
-    int animationRepeatDelayMilliseconds = 3000,
-    bool isOverlayBgTransparent = false}) {
+void createTutorialOverlayIfNotExists({
+  required String tagName,
+  required BuildContext context,
+  bool enableHolesAnimation = true,
+  bool enableAnimationRepeat = true,
+  double defaultPadding = 4,
+  List<WidgetData> widgetsData = const [],
+  Function? onTap,
+  Color? bgColor,
+  Widget? description,
+  int highlightCount = 3,
+  int animationMilliseconds = 150,
+  int animationRepeatDelayMilliseconds = 3000,
+  bool isOverlayBgTransparent = false,
+}) {
   if (!_overlays.containsKey(tagName)) {
     createTutorialOverlay(
-        context: context,
-        tagName: tagName,
-        enableHolesAnimation: enableHolesAnimation,
-        enableAnimationRepeat: enableAnimationRepeat,
-        defaultPadding: defaultPadding,
-        widgetsData: widgetsData,
-        onTap: onTap,
-        bgColor: bgColor,
-        description: description,
-        highlightCount: highlightCount,
-        animationMilliseconds: animationMilliseconds,
-        animationRepeatDelayMilliseconds: animationRepeatDelayMilliseconds,
-        isOverlayBgTransparent: isOverlayBgTransparent);
+      context: context,
+      tagName: tagName,
+      enableHolesAnimation: enableHolesAnimation,
+      enableAnimationRepeat: enableAnimationRepeat,
+      defaultPadding: defaultPadding,
+      widgetsData: widgetsData,
+      onTap: onTap,
+      bgColor: bgColor,
+      description: description,
+      highlightCount: highlightCount,
+      animationMilliseconds: animationMilliseconds,
+      animationRepeatDelayMilliseconds: animationRepeatDelayMilliseconds,
+      isOverlayBgTransparent: isOverlayBgTransparent,
+    );
   }
 }
 
-void createTutorialOverlay(
-    {@required String tagName,
-    @required BuildContext context,
-    bool enableHolesAnimation = true,
-    bool enableAnimationRepeat = true,
-    double defaultPadding = 4,
-    List<WidgetData> widgetsData = const [],
-    Function onTap,
-    Color bgColor,
-    Widget description,
-    int highlightCount = 3,
-    int animationMilliseconds = 150,
-    int animationRepeatDelayMilliseconds = 3000,
-    bool isOverlayBgTransparent = false}) {
-  final String generatedUUID = uuid.v4();
+void createTutorialOverlay({
+  required String tagName,
+  required BuildContext context,
+  Function? onTap,
+  Color? bgColor,
+  Widget? description,
+  bool enableHolesAnimation = true,
+  bool enableAnimationRepeat = true,
+  double defaultPadding = 4,
+  List<WidgetData> widgetsData = const [],
+  int highlightCount = 3,
+  int animationMilliseconds = 150,
+  int animationRepeatDelayMilliseconds = 3000,
+  bool isOverlayBgTransparent = false,
+}) {
+  final String generatedUUID = Uuid().v4();
   _printIfDebug('createTutorialOverlay', "starteed for tag $tagName");
-  if (visibleOverlayPage != null && visibleOverlayPage.tagName == tagName) {
+  if (_visibleOverlayPage != null && _visibleOverlayPage!.tagName == tagName) {
     // removes shown overlay if it's beiong rewritten
     hideOverlayEntryIfExists();
   }
@@ -237,11 +220,11 @@ void createTutorialOverlay(
       disabledVisibleWidgetsCount++;
     }
   });
-  AnimationController animationController;
-  CurvedAnimation animation;
+  AnimationController? animationController;
+  late CurvedAnimation animation;
   if (!isOverlayBgTransparent && enableHolesAnimation) {
     animationController = AnimationController(
-        vsync: Overlay.of(context),
+        vsync: Overlay.of(context)!,
         duration: Duration(milliseconds: animationMilliseconds));
     animation = CurvedAnimation(
         parent: animationController,
@@ -252,23 +235,23 @@ void createTutorialOverlay(
     animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         if (animCount < highlightCount) {
-          animationController.reverse();
+          animationController!.reverse();
           animCount++;
         }
       } else if (status == AnimationStatus.dismissed) {
         if (animCount < highlightCount) {
-          animationController.forward();
+          animationController!.forward();
         } else {
           animCount = 0;
-          if (visibleOverlayPage?.uuid == generatedUUID &&
+          if (_visibleOverlayPage?.uuid == generatedUUID &&
               enableAnimationRepeat) {
             if (!inTheMiddleOfFuture) {
               inTheMiddleOfFuture = true;
               Future.delayed(
                       Duration(milliseconds: animationRepeatDelayMilliseconds))
                   .then((d) {
-                if (visibleOverlayPage?.uuid == generatedUUID) {
-                  animationController.forward();
+                if (_visibleOverlayPage?.uuid == generatedUUID) {
+                  animationController!.forward();
                   inTheMiddleOfFuture = false;
                 }
               });
@@ -279,47 +262,53 @@ void createTutorialOverlay(
     });
   }
   _overlays[tagName] = OverlayData(
-      isOverlayBgTransparent: isOverlayBgTransparent,
-      uuid: generatedUUID,
-      context: context,
-      animationController: animationController,
-      widgetsGlobalKeys: widgetsGlobalKeys,
-      enabledVisibleWidgetsCount: enabledVisibleWidgetsCount,
-      disabledVisibleWidgetsCount: disabledVisibleWidgetsCount,
-      tagName: tagName,
-      showOverlay: () {
-        animationController?.reset();
-        animationController?.forward();
-      },
-      hideOverlay: () {
-        animationController?.reset();
-      },
-      entry: OverlayEntry(
-          builder: (BuildContext context) => FutureBuilder(
-              future: waitForFrameToEnd(),
-              builder: (BuildContext context, AsyncSnapshot snapshot) {
-                if (isOverlayBgTransparent) {
-                  return description;
-                } else {
-                  return GestureDetector(
-                      onTap: onTap,
-                      child: ClipPath(
-                          clipper: InvertedClipper(
-                              padding: defaultPadding,
-                              animation: animation,
-                              reclip: animationController,
-                              widgetsData: widgetsData),
-                          child: CustomPaint(
-                            child: Container(
-                              child: description,
-                            ),
-                            painter: OverlayPainter(
-                                padding: defaultPadding,
-                                animation: animation,
-                                bgColor: bgColor,
-                                context: context,
-                                widgetsData: widgetsData),
-                          )));
-                }
-              })));
+    isOverlayBgTransparent: isOverlayBgTransparent,
+    uuid: generatedUUID,
+    context: context,
+    animationController: animationController!,
+    widgetsGlobalKeys: widgetsGlobalKeys,
+    enabledVisibleWidgetsCount: enabledVisibleWidgetsCount,
+    disabledVisibleWidgetsCount: disabledVisibleWidgetsCount,
+    tagName: tagName,
+    showOverlay: () {
+      animationController?.reset();
+      animationController?.forward();
+    },
+    hideOverlay: () {
+      animationController?.reset();
+    },
+    entry: OverlayEntry(
+      builder: (BuildContext context) => FutureBuilder(
+        future: waitForFrameToEnd(),
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          if (isOverlayBgTransparent) {
+            return description!;
+          } else {
+            return GestureDetector(
+              onTap: onTap as void Function()?,
+              child: ClipPath(
+                clipper: InvertedClipper(
+                    padding: defaultPadding,
+                    animation: animation,
+                    reclip: animationController,
+                    widgetsData: widgetsData),
+                child: CustomPaint(
+                  child: Container(
+                    child: description,
+                  ),
+                  painter: OverlayPainter(
+                    padding: defaultPadding,
+                    animation: animation,
+                    bgColor: bgColor,
+                    context: context,
+                    widgetsData: widgetsData,
+                  ),
+                ),
+              ),
+            );
+          }
+        },
+      ),
+    ),
+  );
 }

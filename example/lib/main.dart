@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  MyHomePage({Key? key, required this.title}) : super(key: key);
 
   final String title;
 
@@ -35,28 +35,36 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     setTutorialShowOverlayHook((String tagName) => print('SHOWING $tagName'));
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      createTutorialOverlay(
-          context: context,
-          tagName: 'example',
-          bgColor: Colors.green.withOpacity(
-              0.4), // Optional. uses black color with 0.4 opacity by default
-          onTap: () => print("TAP"),
-          widgetsData: <WidgetData>[
-            WidgetData(key: buttonKey, isEnabled: true, padding: 4),
-            WidgetData(
-                key: counterKey, isEnabled: false, shape: WidgetShape.Rect)
-          ],
-          description: Text(
-            'hello',
-            textAlign: TextAlign.center,
-            style: TextStyle(decoration: TextDecoration.none),
-          ));
-
-      showOverlayEntry(tagName: 'example');
-    });
+    SchedulerBinding.instance!.addPostFrameCallback(postFrameCallback);
 
     super.initState();
+  }
+
+  void postFrameCallback(Duration duration) {
+    createTutorialOverlay(
+      context: context,
+      tagName: 'example',
+      bgColor: Colors.green.withOpacity(
+          0.4), // Optional. uses black color with 0.4 opacity by default
+      onTap: () => print("TAP"),
+      widgetsData: <WidgetData>[
+        WidgetData(key: buttonKey, isEnabled: true, padding: 4),
+        WidgetData(
+          key: counterKey,
+          isEnabled: false,
+          shape: WidgetShape.Rect,
+        )
+      ],
+      description: Text(
+        'hello',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          decoration: TextDecoration.none,
+        ),
+      ),
+    );
+
+    showOverlayEntry(tagName: 'example');
   }
 
   void _incrementCounter() {
@@ -80,12 +88,13 @@ class _MyHomePageState extends State<MyHomePage> {
               'You have pushed the button this many times:',
             ),
             Padding(
-                padding: EdgeInsets.fromLTRB(_leftPosition, 0, 0, 0),
-                child: Text(
-                  '$_counter',
-                  key: counterKey,
-                  style: Theme.of(context).textTheme.display1,
-                ))
+              padding: EdgeInsets.fromLTRB(_leftPosition, 0, 0, 0),
+              child: Text(
+                '$_counter',
+                key: counterKey,
+                style: Theme.of(context).textTheme.headline4,
+              ),
+            )
           ],
         ),
       ),
