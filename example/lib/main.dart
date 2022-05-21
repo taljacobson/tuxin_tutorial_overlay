@@ -35,7 +35,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     setTutorialShowOverlayHook((String tagName) => print('SHOWING $tagName'));
-    SchedulerBinding.instance!.addPostFrameCallback(postFrameCallback);
+    SchedulerBinding.instance.addPostFrameCallback(postFrameCallback);
 
     super.initState();
   }

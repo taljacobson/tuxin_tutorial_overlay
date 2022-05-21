@@ -78,7 +78,7 @@ _printIfDebug(String funcName, String str) {
 void redrawCurrentOverlay() {
   if (_visibleOverlayPage != null) {
     _printIfDebug('redrawCurrentOverlay', "tag ${_visibleOverlayPage!.tagName}");
-    SchedulerBinding.instance!.addPostFrameCallback((_) {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
       _showOverlayEntry(
           tagName: _visibleOverlayPage!.tagName,
           redisplayOverlayIfSameTAgName: true);
@@ -93,7 +93,7 @@ void _showOverlayEntry({
   bool redisplayOverlayIfSameTAgName = false,
 }) {
   _printIfDebug('_showOverlayEntry', "for tag $tagName");
-  SchedulerBinding.instance!.addPostFrameCallback((_) {
+  SchedulerBinding.instance.addPostFrameCallback((_) {
     if (!_doneIt) {
       _doneIt = true;
       _detectWidgetPositionNSizeChange();
@@ -125,7 +125,7 @@ void showOverlayEntry({
   required String tagName,
   bool redisplayOverlayIfSameTAgName = true,
 }) async {
-  SchedulerBinding.instance!.addPostFrameCallback(
+  SchedulerBinding.instance.addPostFrameCallback(
     (d) => _showOverlayLock.synchronized(
       () => _showOverlayEntry(
         tagName: tagName,
@@ -150,7 +150,7 @@ void hideOverlayEntryIfExists({bool toRunHook = true}) {
 
 Future waitForFrameToEnd() async {
   Completer completer = new Completer();
-  SchedulerBinding.instance!.addPostFrameCallback((_) => completer.complete());
+  SchedulerBinding.instance.addPostFrameCallback((_) => completer.complete());
   return completer.future;
 }
 

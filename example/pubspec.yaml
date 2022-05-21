@@ -1,7 +1,6 @@
 name: tuxin_tutorial_overlay_example
 description: Tutorial Overlay Example Project
 
-author: Kfir Zohar Ozer <ufkfir@icloud.com>
 homepage: https://github.com/kfirufk/tuxin_tutorial_overlay
 
 environment:
