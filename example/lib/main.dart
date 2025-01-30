@@ -9,6 +9,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Tux-In Tutorial Overlay Example',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -31,6 +32,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
   final GlobalKey buttonKey = GlobalKey();
   final GlobalKey counterKey = GlobalKey();
+  final GlobalKey decKey = GlobalKey();
   double _leftPosition = 0;
   @override
   void initState() {
@@ -44,9 +46,12 @@ class _MyHomePageState extends State<MyHomePage> {
     createTutorialOverlay(
       context: context,
       tagName: 'example',
-      bgColor: Colors.green.withOpacity(
-          0.4), // Optional. uses black color with 0.4 opacity by default
-      onTap: () => print("TAP"),
+      bgColor: Colors.green.withValues(
+          alpha: 0.4), // Optional. uses black color with 0.4 opacity by default
+      onTap: () => {
+        hideOverlayEntryIfExists(),
+        showOverlayEntry(tagName: 'decreament'),
+      },
       widgetsData: <WidgetData>[
         WidgetData(key: buttonKey, isEnabled: true, padding: 4),
         WidgetData(
@@ -64,6 +69,27 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
 
+    createTutorialOverlay(
+      context: context,
+      tagName: 'decreament',
+      onTap: () => hideOverlayEntryIfExists(),
+      widgetsData: <WidgetData>[
+        WidgetData(key: decKey, isEnabled: true, padding: 4),
+        WidgetData(
+          key: counterKey,
+          isEnabled: false,
+          shape: WidgetShape.Rect,
+        )
+      ],
+      description: Text(
+        'decreament',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          decoration: TextDecoration.none,
+        ),
+      ),
+    );
+
     showOverlayEntry(tagName: 'example');
   }
 
@@ -72,6 +98,11 @@ class _MyHomePageState extends State<MyHomePage> {
       _leftPosition += 10;
       _counter++;
     });
+
+    if (_leftPosition > 50) {
+      hideOverlayEntryIfExists(toRunHook: false);
+      showOverlayEntry(tagName: 'decreament');
+    }
   }
 
   @override
@@ -79,6 +110,20 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.restore),
+            key: decKey,
+            onPressed: () {
+              setState(() {
+                _leftPosition = 0;
+                _counter = 0;
+              });
+              hideOverlayEntryIfExists();
+              showOverlayEntry(tagName: 'example');
+            },
+          ),
+        ],
       ),
       body: Center(
         child: Column(
@@ -92,7 +137,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Text(
                 '$_counter',
                 key: counterKey,
-                style: Theme.of(context).textTheme.headline4,
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
             )
           ],

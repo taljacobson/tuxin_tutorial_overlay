@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'WidgetData.dart';
 
 class HoleArea {
@@ -17,7 +17,8 @@ class HoleArea {
     double padding = 0.0,
     WidgetShape shape = WidgetShape.Oval,
   }) {
-    final RenderBox renderBoxRed = key.currentContext!.findRenderObject() as RenderBox;
+    final RenderBox renderBoxRed =
+        key.currentContext!.findRenderObject() as RenderBox;
     final Offset position = renderBoxRed.localToGlobal(Offset.zero);
     final Size size = renderBoxRed.size;
     return HoleArea(

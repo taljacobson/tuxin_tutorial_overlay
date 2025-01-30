@@ -1,10 +1,10 @@
-
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+// import 'package:flutter/colors.dart';
 
 import 'HoleArea.dart';
 import 'WidgetData.dart';
 
-final Color colorBlack = Colors.black.withOpacity(0.4);
+final Color colorBlack = Color(0x000000).withValues(alpha: .4);
 
 class OverlayPainter extends CustomPainter {
   final Animation<double> animation;

@@ -1,8 +1,6 @@
-
-
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:synchronized/synchronized.dart';
 
@@ -54,7 +52,8 @@ void _detectWidgetPositionNSizeChange() {
 
 bool _sizeVisitor(GlobalKey elementKey) {
   if (elementKey.currentContext != null) {
-    final RenderBox renderBox = elementKey.currentContext!.findRenderObject() as RenderBox;
+    final RenderBox renderBox =
+        elementKey.currentContext!.findRenderObject() as RenderBox;
     bool isChanged = false;
     Rect newRect = renderBox.localToGlobal(Offset.zero) & renderBox.size;
     _rectMap.update(elementKey, (oldRect) {
@@ -77,7 +76,8 @@ _printIfDebug(String funcName, String str) {
 
 void redrawCurrentOverlay() {
   if (_visibleOverlayPage != null) {
-    _printIfDebug('redrawCurrentOverlay', "tag ${_visibleOverlayPage!.tagName}");
+    _printIfDebug(
+        'redrawCurrentOverlay', "tag ${_visibleOverlayPage!.tagName}");
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _showOverlayEntry(
           tagName: _visibleOverlayPage!.tagName,
@@ -114,7 +114,7 @@ void _showOverlayEntry({
       showOverlayHook!(tagName);
     }
     final OverlayData data = _overlays[tagName]!;
-    Overlay.of(data.context)!.insert(data.entry);
+    Overlay.of(data.context).insert(data.entry);
     _visibleOverlayPage = data;
     _visibleOverlayPage!.showOverlay();
   }
@@ -137,8 +137,8 @@ void showOverlayEntry({
 
 void hideOverlayEntryIfExists({bool toRunHook = true}) {
   if (_visibleOverlayPage != null) {
-    _printIfDebug(
-        'hideOverlayEntryIfExists', "found tag ${_visibleOverlayPage!.tagName}");
+    _printIfDebug('hideOverlayEntryIfExists',
+        "found tag ${_visibleOverlayPage!.tagName}");
     if (toRunHook && hideOverlayHook != null) {
       hideOverlayHook!(_visibleOverlayPage!.tagName);
     }
@@ -224,7 +224,7 @@ void createTutorialOverlay({
   late CurvedAnimation animation;
   if (!isOverlayBgTransparent && enableHolesAnimation) {
     animationController = AnimationController(
-        vsync: Overlay.of(context)!,
+        vsync: Overlay.of(context),
         duration: Duration(milliseconds: animationMilliseconds));
     animation = CurvedAnimation(
         parent: animationController,

@@ -1,14 +1,14 @@
 name: tuxin_tutorial_overlay
 description: an overlay package that can be used for tutorials and walkthrough
-version: 0.5.1
+version: 0.5.2
 homepage: https://github.com/kfirufk/tuxin_tutorial_overlay
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.17.0 <3.0.0'
 
 dependencies:
-  synchronized: ^3.0.0+2
-  uuid: ^3.0.6
+  synchronized: ^3.3.0+3
+  uuid: ^4.5.1
 
   flutter:
     sdk: flutter
